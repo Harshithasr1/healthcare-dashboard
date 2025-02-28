@@ -1,7 +1,26 @@
-import Image from "next/image";
+import Navbar from "@/components/Navbar";
+import PatientList from "@/components/PatientList";
+import History from "@/components/History";
+import DiagnosticList from "@/components/DiagnosticList";
 
 export default function Home() {
   return (
+    <div>
+      <Navbar />
+      <div className="flex flex-col">
+    <div className="flex">
+        <PatientList />
+        <div className="flex flex-col">
+            <History />
+            <DiagnosticList />
+        </div>
+    </div>
+</div>
+      </div>
+  );
+};
+
+    /*
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
         <Image
@@ -97,5 +116,4 @@ export default function Home() {
         </a>
       </footer>
     </div>
-  );
-}
+    */
