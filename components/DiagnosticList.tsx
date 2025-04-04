@@ -1,84 +1,78 @@
-import React from 'react';
+'use client'
 
-const DiagnosticList = () => {
-    const diagnosticData = [
-        {
-            problem: "Hypertension",
-            description: "Chronic high blood pressure",
-            status: "Under Observation"
-        },
-        {
-            problem: "Type 2 Diabetes",
-            description: "Insulin resistance and elevated blood sugar",
-            status: "Cured"
-        },
-        {
-            problem: "Asthma",
-            description: "Recurrent episodes of bronchial constriction",
-            status: "Inactive"
-        },
-        {
-            problem: "Osteoarthritis",
-            description: "Degenerative joint disease",
-            status: "Untreated"
-        },
-        {
-            problem: "Allergic Rhinitis",
-            description: "Seasonal allergies causing nasal congestion",
-            status: "Active"
+import React, { useState, useEffect } from 'react';
+import { Diagnostic } from '@/services/types';
+import { fetchPatientData } from '@/services/api';
+
+const DiagnosticList: React.FC<{ diagnostics?: Diagnostic[] }> = ({ diagnostics: propDiagnostics }) => {
+  const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // If diagnostics are provided as props, use them
+        if (propDiagnostics && propDiagnostics.length > 0) {
+          setDiagnostics(propDiagnostics);
+        } else {
+          // Otherwise fetch from API
+          const patientData = await fetchPatientData();
+          setDiagnostics(patientData.diagnostics);
         }
-    ];
+      } catch (err) {
+        console.error('Failed to load diagnostics:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [propDiagnostics]);
 
+  if (isLoading) {
     return (
-        <div className="flex flex-col w-200 bg-white shadow-md rounded-lg mx-4 my-4 p-4">
-            <h3 className="text-2xl font-bold mb-6">Diagnostic List</h3>
-            
-            <div className="flex">
-                <div className="flex-1 overflow-y-auto pr-2" style={{ maxHeight: '250px' }}>
-                <table className="w-full">
-                        <thead>
-                            <tr>
-                                <th className="bg-gray-100 rounded-l-full py-3 px-4 text-left font-semibold text-lg">Problem/Diagnosis</th>
-                                <th className="bg-gray-100 py-3 px-4 text-left font-semibold text-lg">Description</th>
-                                <th className="bg-gray-100 rounded-r-full py-3 px-4 text-left font-semibold text-lg">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {diagnosticData.map((item, index) => (
-                                <tr key={index} className="border-b border-gray-200">
-                                    <td className="py-3 px-4 text-md">{item.problem}</td>
-                                    <td className="py-3 px-4 text-md">{item.description}</td>
-                                    <td className={`py-3 px-4 text-${getStatusColor(item.status)} font-medium`}>
-                                        {item.status}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                <div className="w-2 bg-gray-200 rounded-full">
-                    <div className="w-2 h-24 bg-gray-400 rounded-full cursor-pointer hover:bg-gray-500 transition-colors"></div>
-                </div>
-            </div>
-        </div>
+      <div className="flex flex-col w-full bg-white shadow-md rounded-xl mx-4 my-4 p-4">
+        <h3 className="text-2xl font-bold mb-6">Diagnostic List</h3>
+        <p className="text-gray-500">Loading diagnostics...</p>
+      </div>
     );
-};
+  }
 
-const getStatusColor = (status: string): string => {
-    switch (status) {
-        case "Under Observation":
-            return "yellow-600";
-        case "Cured":
-            return "green-600";
-        case "Inactive":
-            return "blue-600";
-        case "Untreated":
-            return "red-600";
-        case "Active":
-            return "purple-600";
-        default:
-            return "gray-600";
-    }
+  return (
+    <div className="flex flex-col w-full bg-white shadow-md rounded-xl mx-4 my-4 p-4">
+      <h3 className="text-2xl font-bold mb-6">Diagnostic List</h3>
+      <div className="flex">
+        <div className="flex-1 overflow-y-auto pr-2" style={{ maxHeight: '250px' }}>
+          <table className="w-full">
+            <thead>
+              <tr>
+                <th className="bg-gray-200 rounded-l-full py-3 px-4 text-left font-semibold text-lg">Problem/Diagnosis</th>
+                <th className="bg-gray-200 py-3 px-4 text-left font-semibold text-lg">Description</th>
+                <th className="bg-gray-200 rounded-r-full py-3 px-4 text-left font-semibold text-lg">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(diagnostics || []).length > 0 ? (
+                diagnostics.map((item: Diagnostic, index) => (
+                  <tr key={index} className="border-b border-gray-200">
+                    <td className="py-3 px-4 text-md">{item.name || 'Unnamed Test'}</td>
+                    <td className="py-3 px-4 text-md">{item.description || 'No description'}</td>
+                    <td className="py-3 px-4 text-md">{item.status || 'Unknown'}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={3} className="py-3 px-4 text-center text-gray-500">
+                    No diagnostic tests available
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default DiagnosticList;

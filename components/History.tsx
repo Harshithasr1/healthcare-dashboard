@@ -1,87 +1,290 @@
-import React from 'react';
-import Image from 'next/image';
-import Respiratory from '/public/respiratory rate.svg'
-import Temperature from '/public/temperature.svg'
-import HeartRate from '/public/HeartBPM.svg'
-import ExpandMore from 'public/expand_more_FILL0_wght300_GRAD0_opsz24.svg'
-import ArrowUp from '/public/ArrowUp.png';
-import ArrowDown from '/public/ArrowDown.png';
+"use client"
+import React, { useEffect, useState } from 'react'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+import { Bar } from 'react-chartjs-2'
+import ExpandMoreIcon from './icons/ExpandMore'
+import ArrowUpIcon from './icons/ArrowUp'
+import ArrowDownIcon from './icons/ArrowDown'
 
-const History = () => {
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+)
+
+import { historyCards } from "./utils/diagnosisData"
+import type { DiagnosisHistory } from '@/services/types'
+import { fetchPatientData } from '@/services/api'
+
+const chartStyles = {
+    systolic: {
+        backgroundColor: 'rgba(230, 111, 210, 0.8)',
+        borderColor: 'rgb(230, 111, 210)',
+        borderWidth: 1,
+    },
+    diastolic: {
+        backgroundColor: 'rgba(140, 111, 230, 0.8)',
+        borderColor: 'rgb(140, 111, 230)',
+        borderWidth: 1,
+    }
+}
+
+// Updated chart options for bar chart
+const options = {
+    responsive: true,
+    plugins: {
+        legend: {
+            position: 'top' as const,
+        },
+    },
+    scales: {
+        y: {
+            beginAtZero: true,
+            grid: {
+                color: 'rgba(0, 0, 0, 0.1)',
+            },
+        },
+        x: {
+            grid: {
+                display: false,
+            },
+        },
+    },
+}
+
+interface VitalSignCardProps {
+    title: string
+    value: number
+    src: string
+    width: number
+    height: number
+    alt: string
+    levels: string
+    bgColor: string
+}
+
+const VitalSignCard = ({ 
+    title, 
+    value, 
+    src, 
+    width, 
+    height, 
+    alt, 
+    levels, 
+    bgColor 
+}: VitalSignCardProps) => {
+    const getUnit = (title: string) => {
+        switch(title) {
+            case "Heart Rate":
+            case "Respiratory Rate":
+                return "bpm"
+            case "Temperature":
+                return "°F"
+            default:
+                return ""
+        }
+    }
+
     return (
-        <div className="flex flex-col h-[66vh] w-200 bg-white shadow-md rounded-lg mx-4 my-4 p-4">
-        <div className="flex items-center pb-10">
-            <h2 className="text-2xl font-bold" >Diagnosis History</h2>
-        </div> 
-        <section className='grid grid-cols-1 grid-rows-1 lg:grid-cols-3 gap-y-12 bg-blue-50 px-5 pt-2 rounded-xl' >
-          <div className='grid col-span-2 row-span-1 gap-y-8 lg:gap-0'>
-            <div className='grid grid-cols-2 grid-rows-1' >
-                <h2 className="flex items-center text-xl font-medium">Blood Pressure</h2>
-                <div className='grid grid-cols-1 text-sm md:mr-0 lg:mr-8'>
-                    <p className='flex justify-end items-center'>
-                        Last 6 Months <span className='ml-3'>expand</span>
-                    </p>
+        <div className={`p-4 rounded-xl flex-1 ${bgColor}`}>
+            <div className="flex flex-col items-center">
+                <div className="mb-3">
+                    <img 
+                        src={src} 
+                        alt={alt}
+                        width={width}
+                        height={height}
+                    />
+                </div>
+                <h4 className="text-gray-600 text-center font-medium">{title}</h4>
+                <div className="text-2xl font-bold text-center mt-2">
+                    {value} {getUnit(title)}
+                </div>
+                <div className="text-sm text-gray-500 mt-1 flex items-center">
+                    {title === "Heart Rate" && <ArrowDownIcon />}
+                    <span className="ml-1">{levels}</span>
                 </div>
             </div>
+        </div>
+    )
+}
+
+interface HistoryProps {
+    diagnosisHistory: DiagnosisHistory[]
+}
+
+const History = ({ diagnosisHistory: initialDiagnosisHistory }: HistoryProps) => {
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const [diagnosisHistory, setDiagnosisHistory] = useState(initialDiagnosisHistory)
+
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                const patientData = await fetchPatientData()
+                setDiagnosisHistory(patientData.diagnosis_history)
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to load patient data')
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        loadData()
+    }, [])
+
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-64 bg-white shadow-md rounded-xl mx-4 my-4">
+                <div className="animate-pulse text-gray-600">Loading patient data...</div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="flex justify-center items-center h-64 bg-white shadow-md rounded-xl mx-4 my-4">
+                <div className="text-red-500">{error}</div>
+            </div>
+        )
+    }
+
+    if (!diagnosisHistory.length) {
+        return (
+            <div className="flex flex-col w-full bg-white shadow-md rounded-xl mx-4 my-4 p-4">
+                <h2 className="text-2xl font-bold mb-6">Diagnosis History</h2>
+                <div className="flex justify-center items-center h-48">
+                    <div className="text-gray-600">No diagnosis history available</div>
+                </div>
+            </div>
+        )
+    }
+    
+    const getAverageValue = (values: number[]) => {
+        if (!values.length) return 0
+        return Math.floor(values.reduce((acc, val) => acc + val, 0) / values.length)
+    }
+    
+    const diastolics = diagnosisHistory.map(h => h.blood_pressure.diastolic.value).reverse()
+    const systolics = diagnosisHistory.map(h => h.blood_pressure.systolic.value).reverse()
+    const respiratoryRates = diagnosisHistory.map(h => h.respiratory_rate.value).reverse()
+    const heartRates = diagnosisHistory.map(h => h.heart_rate.value).reverse()
+    const temperatureRates = diagnosisHistory.map(h => h.temperature.value).reverse()
+
+    const averages = {
+        systolic: getAverageValue(systolics),
+        diastolic: getAverageValue(diastolics),
+        respiratory: getAverageValue(respiratoryRates),
+        heart: getAverageValue(heartRates),
+        temperature: getAverageValue(temperatureRates)
+    }
+
+    const labels = diagnosisHistory.map(h => `${h.month.slice(0,3)}, ${h.year}`).reverse()
+    
+    interface ChartDataset {
+        data: number[]
+        label: string
+        barPercentage: number
+        categoryPercentage: number
+        backgroundColor: string
+        borderColor: string
+        borderWidth: number
+    }
+
+    const chartData = {
+        labels,
+        datasets: [
+            {
+                ...chartStyles.diastolic,
+                data: diastolics,
+                label: 'Diastolic',
+                barPercentage: 0.6,
+                categoryPercentage: 0.8,
+            } as ChartDataset,
+            {
+                ...chartStyles.systolic,
+                data: systolics,
+                label: 'Systolic',
+                barPercentage: 0.6,
+                categoryPercentage: 0.8,
+            } as ChartDataset
+        ]
+    }
+
+    const vitalSignsData = historyCards.map(card => {
+        let currentValue = 0
+        switch(card.title) {
+            case "Respiratory Rate":
+                currentValue = averages.respiratory
+                break
+            case "Temperature":
+                currentValue = averages.temperature
+                break
+            case "Heart Rate":
+                currentValue = averages.heart
+                break
+        }
+        return {...card, value: currentValue}
+    })
+
+    return (
+        <div className="flex flex-col w-full bg-white shadow-md rounded-xl mx-4 my-4 p-4">
+            <h2 className="text-2xl font-bold mb-6">Diagnosis History</h2>
             
-          </div>
-          <div className='flex flex-wrap'>
-            <div className='w-full grid grid-cols-1 grid-rows-3 text-md font-medium mb-4'>
-                <div className='flex items-center'>
-                    <div className=' w-4 h-4 mr-2 bg-pink-400 rounded-full' ></div>
-                    Systolic
+            <div className="bg-blue-50 p-6 rounded-xl mb-6">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-semibold">Blood Pressure</h3>
+                    <button className="flex items-center text-sm">
+                        Last 6 Months <ExpandMoreIcon />
+                    </button>
                 </div>
-                <h3 className="py-1 flex items-center text-2xl font-medium">systolicAverage</h3>
-                <div className='flex items-center'>
-                    ArrowUp
-                    <p className='ml-1 font-extralight'>Higher than Average</p>
+                <div className="flex">
+                    <div className="w-3/4">
+                        <Bar options={options} data={chartData} />
+                    </div>
+                    <div className="w-1/4 flex flex-col justify-center gap-6 pl-4">
+                        <div>
+                            <div className="flex items-center">
+                                <div className="w-3 h-3 rounded-full bg-pink-400 mr-2"></div>
+                                <span>Systolic: {averages.systolic}</span>
+                            </div>
+                            <div className="flex items-center text-green-500 text-sm mt-1">
+                                <ArrowUpIcon /> Higher than average
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex items-center">
+                                <div className="w-3 h-3 rounded-full bg-purple-400 mr-2"></div>
+                                <span>Diastolic: {averages.diastolic}</span>
+                            </div>
+                            <div className="flex items-center text-red-500 text-sm mt-1">
+                                <ArrowDownIcon /> Lower than average
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div className='h-px w-full mr-2 bg-gray-400 mb-4' ></div>
-            <div className='w-full grid grid-cols-1 grid-rows-3 text-md font-medium'>
-                <div className='flex items-center'>
-                    <div className='w-4 h-4 mr-2 bg-purple-400 rounded-full' ></div>
-                    Diastolic
-                </div>
-                <h3 className="py-1 flex items-center text-2xl font-medium">diastolicAverage</h3>
-                <div className='flex items-center'>
-                <Image src={ArrowDown} alt="Arrow down" width={20} height={20} />  
-                <p className='ml-2 font-extralight'>Lower than Average</p>
-                </div>
+            <div className="flex gap-4 mt-6">
+                {vitalSignsData.map((card, index) => (
+                    <VitalSignCard 
+                        key={index}
+                        {...card}
+                    />
+                ))}
             </div>
-          </div>
-        </section>
+        </div>
+    )
+}
 
-         <section className='grid grid-cols-3 gap-4 mt-4 px-1'>
-            {/* Respiratory Rate */}
-            <div className='bg-blue-100 p-4 rounded-xl'>
-                <Image src={Respiratory} alt="Respiratory Rate" width={70} height={70} />
-                <h3 className='text-lg font-medium mb-2'>Respiratory Rate</h3>
-                <p className='text-3xl font-bold mb-4'>18 bpm</p>
-                <p className='text-lg font-medium'>Normal</p>
-            </div>
-
-            {/* Temperature */}
-            <div className='bg-rose-100 p-4 rounded-xl'>
-            <Image src={Temperature} alt="Temperature" width={70} height={70} />
-                <h3 className='text-lg font-medium mb-2'>Temperature</h3>
-                <p className='text-3xl font-bold mb-4'>98.6 °F</p>
-                <p className='text-lg font-medium'>Normal</p>
-            </div>
-
-            {/* Heart Rate */}
-            <div className='bg-red-300 p-4 rounded-xl'>
-            <Image src={HeartRate} alt="Heart Rate" width={70} height={70} />  
-                <h3 className='text-lg font-medium mb-2'>Heart Rate</h3>
-                <p className='text-3xl font-bold mb-4'>72 bpm</p>
-                <div className='flex items-center mb-2'>
-                    <Image src={ArrowDown} alt="Arrow down" width={20} height={20} />  
-                    <p className='ml-2 text-lg font-medium'>Lower than Average</p>
-                </div>
-            </div>
-        </section>
-    </div>
-    );
-};
-
-export default History;
+export default History

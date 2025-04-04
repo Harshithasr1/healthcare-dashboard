@@ -1,50 +1,54 @@
 // components/Navbar.tsx
 import React from 'react';
 import Image from 'next/image';
-import TestLogo from '/public/TestLogo.svg'
-import HomeIcon from '/public/home_FILL0_wght300_GRAD0_opsz24.svg'
-import GroupIcon from '/public/group_FILL0_wght300_GRAD0_opsz24.svg'
-import CalenderIcon from '/public/calendar_today_FILL0_wght300_GRAD0_opsz24.svg'
-import ChatIcon from '/public/chat_bubble_FILL0_wght300_GRAD0_opsz24.svg'
-import CreditCardIcon from '/public/credit_card_FILL0_wght300_GRAD0_opsz24.svg'
-import SeniorDoctor from '/public/senior-woman-doctor-and-portrait-smile-for-health-2023-11-27-05-18-16-utc.png'
-import Settings from '/public/settings_FILL0_wght300_GRAD0_opsz24.svg'
-import MoreV from '/public/more_vert_FILL0_wght300_GRAD0_opsz24.svg'
 
-const Navbar = () => {
+// Define a type for navigation items
+interface NavItem {
+  icon: string;
+  label: string;
+}
+
+// Centralize navigation items
+const NAV_ITEMS: NavItem[] = [
+  { icon: '/home_FILL0_wght300_GRAD0_opsz24.svg', label: 'Overview' },
+  { icon: '/group_FILL0_wght300_GRAD0_opsz24.svg', label: 'Patients' },
+  { icon: '/calendar_today_FILL0_wght300_GRAD0_opsz24.svg', label: 'Schedule' },
+  { icon: '/chat_bubble_FILL0_wght300_GRAD0_opsz24.svg', label: 'Message' },
+  { icon: '/credit_card_FILL0_wght300_GRAD0_opsz24.svg', label: 'Transactions' }
+];
+
+const Navbar: React.FC = () => {
   return (
     <nav className="bg-white shadow-md rounded-full mx-4 my-4 px-2 flex items-center justify-between flex-wrap">
+      {/* Logo Section */}
       <div className="flex items-center">
-      <Image src={TestLogo} alt="TechCare Logo" width={220} height={80} priority />
+        <Image 
+          src="/TestLogo.svg" 
+          alt="TechCare Logo" 
+          width={220} 
+          height={80} 
+          priority 
+        />
       </div>
 
-      <div className="hidden md:flex ml-auto md:px-4 py-4 gap-8 justify-center"> 
-        <div className="flex items-center">
-          <Image src={HomeIcon} alt="Overview Icon" width={20} height={20} />
-          <span className="ml-2 text-xl">Overview</span>
-        </div>
-        <div className="flex items-center bg-teal-200 rounded-full px-6 py-2">
-          <Image src={GroupIcon} alt="Patients Icon" width={20} height={20} />
-          <span className="ml-2 text-xl">Patients</span>
-        </div>
-        <div className="flex items-center">
-          <Image src={CalenderIcon} alt="Schedule Icon" width={20} height={20} />
-          <span className="ml-2 text-xl">Schedule</span>
-        </div>
-        <div className="flex items-center">
-          <Image src={ChatIcon} alt="Message Icon" width={20} height={20} />
-          <span className="ml-2 text-xl">Message</span>
-        </div>
-        <div className="flex items-center">
-          <Image src={CreditCardIcon} alt="Transactions Icon" width={20} height={20} />
-          <span className="ml-2 text-xl">Transactions</span>
-        </div>
+      {/* Navigation Items */}
+      <div className="flex px-4 py-4 gap-8 justify-center">
+        {NAV_ITEMS.map((item, index) => (
+          <div 
+            key={index} 
+            className={`flex items-center ${item.label === 'Patients' ? 'bg-teal-200 rounded-full px-6 py-2' : ''}`}
+          >
+            <Image src={item.icon} alt={`${item.label} Icon`} width={20} height={20} />
+            <span className="ml-2 text-xl">{item.label}</span>
+          </div>
+        ))}
       </div>
 
-      <div className="flex items-center ml-auto">
+      {/* User and Settings Section */}
+      <div className="flex items-center">
         <div className="flex items-center mr-6">
           <Image 
-            src={SeniorDoctor} 
+            src="/senior-woman-doctor-and-portrait-smile-for-health-2023-11-27-05-18-16-utc.png" 
             alt="Dr. Jose Simmons" 
             width={60} 
             height={60} 
@@ -56,13 +60,15 @@ const Navbar = () => {
           </div>
         </div>
 
-      <div className="w-1 h-8 bg-gray-300 mx-4"></div>
-      
-        <div className="p-2">
-          <Image src={Settings} alt="Settings Icon" width={30} height={30} />
-        </div>
-        <div className="p-2">
-          <Image src={MoreV} alt="More Icon" width={5} height={5} /> 
+        <div className="w-1 h-8 bg-gray-300 mx-4"></div>
+        
+        <div className="flex space-x-2">
+          <div className="p-2">
+            <Image src="/settings_FILL0_wght300_GRAD0_opsz24.svg" alt="Settings" width={30} height={30} />
+          </div>
+          <div className="p-2">
+            <Image src="/more_vert_FILL0_wght300_GRAD0_opsz24.svg" alt="More" width={5} height={5} /> 
+          </div>
         </div>
       </div>
     </nav>
